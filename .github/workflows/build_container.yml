@@ -1,0 +1,38 @@
+---
+name: Build Container
+
+"on":
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - '.github/workflows/build_container.yml'
+      - 'Containerfile'
+      - 'main.py'
+      - 'requirements.txt'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone current repository
+        uses: actions/checkout@v3
+
+      - name: Build using buildah
+        id: build
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ghcr.io/tibeer/k8s-example-workload
+          tags: ghcr.io/tibeer/k8s-example-workload:latest
+          containerfiles: |
+            ./Containerfile
+
+      - name: Push to ghcr.io
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build.outputs.image }}
+          tags: ${{ steps.build.outputs.tags }}
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
